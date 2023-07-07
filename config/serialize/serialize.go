@@ -2,9 +2,9 @@ package serialize
 
 import (
 	"errors"
-	"fil-chain-extractor/config"
 	"fmt"
 	"github.com/facebookgo/atomicfile"
+	"github.com/pando-project/fil-chain-extractor/config"
 	"gopkg.in/yaml.v2"
 	"io"
 	"os"
@@ -15,9 +15,11 @@ import (
 // repo doesn't exist.
 var ErrNotInitialized = errors.New("fce not initialized, please run 'fce init'")
 
+type ConfigPath string
+
 // ReadConfigFile reads the config from `filename` into `cfg`.
-func ReadConfigFile(filename string, cfg any) error {
-	f, err := os.Open(filename)
+func ReadConfigFile(filename ConfigPath, cfg any) error {
+	f, err := os.Open(string(filename))
 	if err != nil {
 		if os.IsNotExist(err) {
 			err = ErrNotInitialized
@@ -32,13 +34,13 @@ func ReadConfigFile(filename string, cfg any) error {
 }
 
 // WriteConfigFile writes the config from `cfg` into `filename`.
-func WriteConfigFile(filename string, cfg any) error {
-	err := os.MkdirAll(filepath.Dir(filename), 0755)
+func WriteConfigFile(filename ConfigPath, cfg any) error {
+	err := os.MkdirAll(filepath.Dir(string(filename)), 0755)
 	if err != nil {
 		return err
 	}
 
-	f, err := atomicfile.New(filename, 0600)
+	f, err := atomicfile.New(string(filename), 0600)
 	if err != nil {
 		return err
 	}
@@ -56,11 +58,16 @@ func encode(w io.Writer, value any) error {
 	return err
 }
 
-func Load(filename string) (*config.Config, error) {
+func Load(filename ConfigPath) (*config.Config, error) {
 	var cfg config.Config
 	err := ReadConfigFile(filename, &cfg)
 	if err != nil {
 		return nil, err
+	}
+	// inject lotus api info into env
+	lotusApiInfo := fmt.Sprintf("%s:%s", cfg.LotusInfo.Token, cfg.LotusInfo.APIAddress)
+	if err := os.Setenv("FULLNODE_API_INFO", lotusApiInfo); err != nil {
+		return nil, fmt.Errorf("failed to set FULLNODE_API_INFO into os environment variable: %s", err)
 	}
 
 	return &cfg, err

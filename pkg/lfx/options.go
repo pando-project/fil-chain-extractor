@@ -8,7 +8,7 @@ import (
 )
 
 // Option is a functional option which can be used with the New function to
-// change how the node is constructed
+// change how the app is constructed
 //
 // Options are applied in sequence
 type Option func(*Settings) error
@@ -50,7 +50,7 @@ func If(b bool, opts ...Option) Option {
 }
 
 // Override option changes constructor for a given type
-func Override(typ, constructor interface{}) Option {
+func Override(typ, constructor any) Option {
 	return func(s *Settings) error {
 		if i, ok := typ.(Invoke); ok {
 			s.invokes[i] = fx.Invoke(constructor)
@@ -70,7 +70,7 @@ func Override(typ, constructor interface{}) Option {
 }
 
 // Providers converts the constructors to fx.Providers based on their first output
-func Providers(constructors ...interface{}) Option {
+func Providers(constructors ...any) Option {
 	return func(s *Settings) error {
 		for _, constructor := range constructors {
 			t := reflect.TypeOf(constructor)
@@ -85,7 +85,7 @@ func Providers(constructors ...interface{}) Option {
 }
 
 // Unset removes the specific constructor from the Settings
-func Unset(typ interface{}) Option {
+func Unset(typ any) Option {
 	return func(s *Settings) error {
 		if i, ok := typ.(Invoke); ok {
 			delete(s.invokes, i)
@@ -112,7 +112,7 @@ func Logger(p fx.Printer) Option {
 }
 
 // From defines a constructor (*T) -> func(t T) T {return t}
-func From(typ interface{}) interface{} {
+func From(typ any) any {
 	rt := []reflect.Type{reflect.TypeOf(typ).Elem()}
 	ft := reflect.FuncOf(rt, rt, false)
 	return reflect.MakeFunc(ft, func(args []reflect.Value) (results []reflect.Value) {
@@ -121,7 +121,7 @@ func From(typ interface{}) interface{} {
 }
 
 // Populate directly uses fx.Populate and bind it onto a Invoke key
-func Populate(key Invoke, target ...interface{}) Option {
+func Populate(key Invoke, target ...any) Option {
 	return func(s *Settings) error {
 		s.invokes[key] = fx.Populate(target...)
 		return nil
@@ -138,7 +138,7 @@ func Populate(key Invoke, target ...interface{}) Option {
 //
 // Note 2: when making changes here, make sure this method stays at
 // 100% coverage. This makes it less likely it will be terribly broken
-func as(in interface{}, as interface{}) interface{} {
+func as(in any, as any) any {
 	outType := reflect.TypeOf(as)
 
 	if outType.Kind() != reflect.Ptr {

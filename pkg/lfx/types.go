@@ -20,12 +20,12 @@ type Special int
 type Settings struct {
 	// modules is a map of constructors for DI
 	//
-	// In most cases the index will be a reflect. Type of element returned by
+	// In most cases the index will be a reflect-type. Type of element returned by
 	// the constructor, but for some 'constructors' it's hard to specify what's
 	// the return type should be (or the constructor returns fx group)
-	modules map[interface{}]fx.Option
+	modules map[any]fx.Option
 
-	// invokes are separate from modules as they can't be referenced by return
+	// invokes are separate from modules since they can't be referenced by return
 	// type, and must be applied in correct order
 	invokes map[Invoke]fx.Option
 
@@ -35,10 +35,10 @@ type Settings struct {
 // StopFunc is used to stop the fx app
 type StopFunc func(context.Context) error
 
-// New builds and starts a
+// New builds and starts an app
 func New(ctx context.Context, opts ...Option) (StopFunc, error) {
 	settings := Settings{
-		modules: map[interface{}]fx.Option{},
+		modules: map[any]fx.Option{},
 		invokes: map[Invoke]fx.Option{},
 	}
 
@@ -48,9 +48,9 @@ func New(ctx context.Context, opts ...Option) (StopFunc, error) {
 	}
 
 	// gather constructors for fx.Options
-	ctors := make([]fx.Option, 0, len(settings.modules))
+	constructors := make([]fx.Option, 0, len(settings.modules))
 	for _, opt := range settings.modules {
-		ctors = append(ctors, opt)
+		constructors = append(constructors, opt)
 	}
 
 	invokes := make([]Invoke, 0, len(settings.invokes))
@@ -62,9 +62,9 @@ func New(ctx context.Context, opts ...Option) (StopFunc, error) {
 		return invokes[i] < invokes[j]
 	})
 
-	invokeCtors := make([]fx.Option, len(invokes))
+	invokeConstructors := make([]fx.Option, len(invokes))
 	for ii := range invokes {
-		invokeCtors[ii] = settings.invokes[invokes[ii]]
+		invokeConstructors[ii] = settings.invokes[invokes[ii]]
 	}
 
 	logOpt := fx.Logger(fxprinter)
@@ -73,8 +73,8 @@ func New(ctx context.Context, opts ...Option) (StopFunc, error) {
 	}
 
 	app := fx.New(
-		fx.Options(ctors...),
-		fx.Options(invokeCtors...),
+		fx.Options(constructors...),
+		fx.Options(invokeConstructors...),
 		logOpt,
 	)
 

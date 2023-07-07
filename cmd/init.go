@@ -1,20 +1,18 @@
 package main
 
 import (
-	"fil-chain-extractor/config"
-	"fil-chain-extractor/config/serialize"
 	"fmt"
-	"path/filepath"
-
+	"github.com/pando-project/fil-chain-extractor/config"
+	"github.com/pando-project/fil-chain-extractor/config/serialize"
 	"github.com/urfave/cli/v2"
 
-	"fil-chain-extractor/pkg/util/filesys"
+	"github.com/pando-project/fil-chain-extractor/pkg/util/filesys"
 )
 
 func NewInitCmd() *cli.Command {
 	return &cli.Command{
 		Name:  "init",
-		Usage: "Initializes fce(fil-chain-extractor) config file.",
+		Usage: "Initializes fce(github.com/pando-project/fil-chain-extractor) config file.",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:     "repo-path",
@@ -24,21 +22,19 @@ func NewInitCmd() *cli.Command {
 		},
 		Action: func(ctx *cli.Context) error {
 			repoPath := ctx.String("repo-path")
-			var cfgPath string
-			if repoPath == "" {
-				cfgPath = filepath.Join(config.DefaultRepoRoot, config.DefaultConfigFile)
-			} else {
-				cfgPath = filepath.Join(repoPath, config.DefaultConfigFile)
+			cfgPath, err := config.Filename(repoPath, "")
+			if err != nil {
+				return fmt.Errorf("failed to get config path: %s", err)
 			}
 			cfgFileExist, err := filesys.IsFileExists(cfgPath)
 			if err != nil {
 				return fmt.Errorf("failure to check config file: %s", err)
 			}
 			if cfgFileExist {
-				return fmt.Errorf("config file `%s` exists", repoPath)
+				return fmt.Errorf("config file `%s` exists", cfgPath)
 			} else {
 				cfg := config.Init()
-				if err := serialize.WriteConfigFile(cfgPath, cfg); err != nil {
+				if err := serialize.WriteConfigFile(serialize.ConfigPath(cfgPath), cfg); err != nil {
 					return err
 				}
 			}

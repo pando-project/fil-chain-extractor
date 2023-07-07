@@ -12,6 +12,7 @@ type Config struct {
 	API       API
 	LotusInfo LotusInfo
 	Storage   Storage
+	Watcher   Watcher
 }
 
 const (

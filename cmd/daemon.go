@@ -2,19 +2,23 @@ package main
 
 import (
 	"context"
-	"github.com/filecoin-project/go-jsonrpc"
-	lotusAPI "github.com/filecoin-project/lotus/api"
+	"github.com/pando-project/fil-chain-extractor/pkg/extractor"
+	storageMongo "github.com/pando-project/fil-chain-extractor/pkg/storage/mongo"
 	"github.com/urfave/cli/v2"
-	"log"
-	"net/http"
+	"go.uber.org/fx"
 
-	"fil-chain-extractor/pkg/util/multiaddress"
+	"github.com/pando-project/fil-chain-extractor/config"
+	"github.com/pando-project/fil-chain-extractor/config/serialize"
+	"github.com/pando-project/fil-chain-extractor/pkg/chain"
+	"github.com/pando-project/fil-chain-extractor/pkg/core"
+	"github.com/pando-project/fil-chain-extractor/pkg/external"
+	"github.com/pando-project/fil-chain-extractor/pkg/lfx"
 )
 
 func NewDaemonCmd() *cli.Command {
 	return &cli.Command{
 		Name:  "daemon",
-		Usage: "Start a fil-chain-extractor daemon process",
+		Usage: "Start a github.com/pando-project/fil-chain-extractor daemon process",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:     "lotus-api-token",
@@ -25,7 +29,7 @@ func NewDaemonCmd() *cli.Command {
 				Name:     "lotus-api-address",
 				Usage:    "lotus full-node api address in multi-address manner",
 				Value:    "/ip4/127.0.0.1/tcp/1234",
-				Required: true,
+				Required: false,
 			},
 			&cli.StringFlag{
 				Name:     "repo-path",
@@ -34,41 +38,34 @@ func NewDaemonCmd() *cli.Command {
 			},
 		},
 		Action: func(cCtx *cli.Context) error {
-
-			headers := http.Header{}
-			if authToken := cCtx.String("api-token"); authToken != "" {
-				headers["Authorization"] = []string{"Bearer " + authToken}
-			}
-			apiUrl := cCtx.String("api-url")
-
-			apiUrlMnet, err := multiaddress.ToNetAddress(apiUrl)
+			repoPath := cCtx.String("repo-path")
+			configPath, err := config.Filename(repoPath, "")
 			if err != nil {
-				logger.Fatalf("multiaddress parse failed, %s", err)
+				logger.Errorf("failed to get config file path: %s", err)
+				return err
 			}
-
-			var api lotusAPI.FullNodeStruct
-			closer, err := jsonrpc.NewMergeClient(
-				context.Background(),
-				"ws://"+apiUrlMnet+"/rpc/v0",
-				"Filecoin",
-				[]interface{}{&api.Internal, &api.CommonStruct.Internal},
-				headers,
+			ctx := context.Background()
+			var modules struct {
+				fx.In
+				Config          *config.Config
+				Storage         *storageMongo.DB
+				Watcher         chain.Watcher
+				TipSetExtractor extractor.Extractor
+			}
+			stopDaemon, err := lfx.New(ctx,
+				lfx.Override(new(serialize.ConfigPath), serialize.ConfigPath(configPath)),
+				core.NewCore(ctx, core.LfxLog, &modules),
+				external.InjectLotusFullNode(cCtx),
 			)
+			defer stopDaemon(cCtx.Context)
 			if err != nil {
-				logger.Fatalf("connecting with lotus failed: %s", err)
-			}
-			defer closer()
-
-			tipset, err := api.ChainHead(context.Background())
-			notify, err := api.ChainNotify(context.TODO())
-			if err != nil {
+				logger.Errorf("failed to inject modules: %s", err)
 				return err
 			}
 
-			if err != nil {
-				log.Fatalf("calling chain head: %s", err)
-			}
-			logger.Infof("Current chain head is : %s", tipset.String())
+			tipSetKey := modules.Watcher.Watch(ctx)
+			modules.TipSetExtractor.ExtractThenPersist(ctx, tipSetKey)
+
 			return nil
 		},
 	}

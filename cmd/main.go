@@ -1,12 +1,10 @@
 package main
 
 import (
-	"os"
-
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/urfave/cli/v2"
 
-	"fil-chain-extractor/pkg/fcelog"
+	"github.com/pando-project/fil-chain-extractor/pkg/fcelog"
 )
 
 var logger = logging.Logger("main")
@@ -28,7 +26,5 @@ func main() {
 	}
 
 	app.Setup()
-	if err := app.Run(os.Args); err != nil {
-		panic(err)
-	}
+	RunApp(app)
 }

@@ -5,5 +5,6 @@ func Init() *Config {
 		LotusInfo: DefaultLotusInfo(),
 		API:       DefaultAPI(),
 		Storage:   DefaultStorage(),
+		Watcher:   DefaultWatcher(),
 	}
 }
