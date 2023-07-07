@@ -20,4 +20,4 @@ A collection of services which collects Filecoin chain status data, metrics and 
 
 ## Architecture
 
-![arch](assets/arch.png)
+![arch](./assets/arch.png)
