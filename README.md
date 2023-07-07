@@ -33,7 +33,7 @@ A collection of services which collects Filecoin chain status data, metrics and 
       MaxWatchInterval: 10s
     ```
 
-3. Run daemon to listen to the chain head and extract then persist extracted data into the user-specified database.
+3. Run daemon to listen to the chain head and extract chain states then persist extracted data into the user-specified database.
 
    ```bash
    fce daemon
