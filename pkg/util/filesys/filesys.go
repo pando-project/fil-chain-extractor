@@ -3,8 +3,6 @@ package filesys
 import (
 	"fmt"
 	"os"
-
-	"golang.org/x/sys/unix"
 )
 
 const (
@@ -15,27 +13,27 @@ const (
 	notFileErr       = "given path %s is not a file"
 )
 
-// IsDirWritable checks a directory and return ture if it is writable
-func IsDirWritable(dir string) (bool, error) {
-	if len(dir) == 0 {
-		return false, fmt.Errorf(pathIsEmptyErr)
-	}
-
-	exists, err := IsDirExists(dir)
-	if err != nil {
-		return false, err
-	}
-	if !exists {
-		return false, fmt.Errorf(pathNotExistsErr, dir)
-	}
-
-	_, err = os.Stat(dir)
-	if err != nil {
-		return false, fmt.Errorf(statFailedErr, dir, err)
-	}
-
-	return unix.Access(dir, unix.W_OK) == nil, nil
-}
+//// IsDirWritable checks a directory and return ture if it is writable
+//func IsDirWritable(dir string) (bool, error) {
+//	if len(dir) == 0 {
+//		return false, fmt.Errorf(pathIsEmptyErr)
+//	}
+//
+//	exists, err := IsDirExists(dir)
+//	if err != nil {
+//		return false, err
+//	}
+//	if !exists {
+//		return false, fmt.Errorf(pathNotExistsErr, dir)
+//	}
+//
+//	_, err = os.Stat(dir)
+//	if err != nil {
+//		return false, fmt.Errorf(statFailedErr, dir, err)
+//	}
+//
+//	return unix.Access(dir, unix.W_OK) == nil, nil
+//}
 
 // IsFileExists checks a file and return true if it is exists, and it is a file
 func IsFileExists(file string) (bool, error) {

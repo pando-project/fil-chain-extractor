@@ -40,8 +40,8 @@ func NewCore(ctx context.Context, logger fx.Printer, target ...any) lfx.Option {
 		lfx.If(logger != nil, lfx.Logger(logger)),
 		lfx.If(len(target) > 0, lfx.Populate(invokePopulate, target...)),
 		lfx.Override(new(*config.Config), serialize.Load),
+		lfx.Override(new(*storageMongo.DB), storageMongo.NewMongoDB),
 		lfx.Override(new(chain.Watcher), watcher.NewWatcher),
 		lfx.Override(new(extractor.Extractor), extractor.NewTipSetExtractor),
-		lfx.Override(new(*storageMongo.DB), storageMongo.NewMongoDB),
 	)
 }

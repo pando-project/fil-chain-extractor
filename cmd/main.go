@@ -15,6 +15,7 @@ func main() {
 	local := []*cli.Command{
 		NewDaemonCmd(),
 		NewInitCmd(),
+		NewDeltaCmd(),
 	}
 
 	app := &cli.App{

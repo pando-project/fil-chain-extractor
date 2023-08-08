@@ -66,6 +66,7 @@ func Load(filename ConfigPath) (*config.Config, error) {
 	}
 	// inject lotus api info into env
 	lotusApiInfo := fmt.Sprintf("%s:%s", cfg.LotusInfo.Token, cfg.LotusInfo.APIAddress)
+	//fmt.Println(lotusApiInfo)
 	if err := os.Setenv("FULLNODE_API_INFO", lotusApiInfo); err != nil {
 		return nil, fmt.Errorf("failed to set FULLNODE_API_INFO into os environment variable: %s", err)
 	}

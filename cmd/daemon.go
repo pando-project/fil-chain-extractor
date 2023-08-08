@@ -49,13 +49,13 @@ func NewDaemonCmd() *cli.Command {
 				fx.In
 				Config          *config.Config
 				Storage         *storageMongo.DB
-				Watcher         chain.Watcher
 				TipSetExtractor extractor.Extractor
+				Watcher         chain.Watcher
 			}
 			stopDaemon, err := lfx.New(ctx,
 				lfx.Override(new(serialize.ConfigPath), serialize.ConfigPath(configPath)),
-				core.NewCore(ctx, core.LfxLog, &modules),
 				external.InjectLotusFullNode(cCtx),
+				core.NewCore(ctx, core.LfxLog, &modules),
 			)
 			defer stopDaemon(cCtx.Context)
 			if err != nil {

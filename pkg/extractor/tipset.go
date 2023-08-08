@@ -2,10 +2,13 @@ package extractor
 
 import (
 	"context"
+	"github.com/filecoin-project/go-address"
+	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lotus/api"
 	"github.com/filecoin-project/lotus/api/v0api"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/ipfs/go-cid"
+	minerPower "github.com/pando-project/fil-chain-extractor/pkg/schema/MinerPower"
 	"github.com/pando-project/fil-chain-extractor/pkg/schema/messages"
 	storageMongo "github.com/pando-project/fil-chain-extractor/pkg/storage/mongo"
 	"github.com/pando-project/fil-chain-extractor/pkg/util/log"
@@ -23,6 +26,50 @@ func NewTipSetExtractor(lotusFullNode v0api.FullNode, db *storageMongo.DB) *TipS
 		LotusFullNode: lotusFullNode,
 		Storage:       db,
 	}
+}
+func (t *TipSetExtractor) ExtractCapacityByMinerIDAndTime(ctx context.Context, addr address.Address, height abi.ChainEpoch) *minerPower.MinerPower {
+	tsk := types.TipSetKey{}
+	ts, err := t.LotusFullNode.ChainGetTipSetByHeight(ctx, height, tsk)
+
+	if err != nil {
+		logger.Errorf("chain get ts by height err: %s", err)
+		return nil
+	}
+	power, err := t.LotusFullNode.StateMinerPower(ctx, addr, ts.Key())
+
+	if err != nil {
+		logger.Errorf("get StateMinerPower err: %s", err)
+	}
+	res := &minerPower.MinerPower{
+		MinerPower:  power.MinerPower,
+		TotalPower:  power.TotalPower,
+		HasMinPower: false,
+	}
+	return res
+}
+
+func (t *TipSetExtractor) ExtractCapacityByMinerID(ctx context.Context, addr address.Address) (*minerPower.MinerPower, abi.ChainEpoch) {
+	tipSet, err := LoadLatestTipSet(ctx, t.LotusFullNode)
+	if err != nil {
+		logger.Errorf("LoadLatestTipSet err: %s", err)
+		return nil, -1
+	}
+	height := tipSet.Height()
+	power, err := t.LotusFullNode.StateMinerPower(ctx, addr, tipSet.Key())
+	if err != nil {
+		logger.Errorf("get StateMinerPower err: %s", err)
+		return nil, -1
+	}
+	res := &minerPower.MinerPower{
+		MinerPower:  power.MinerPower,
+		TotalPower:  power.TotalPower,
+		HasMinPower: false,
+	}
+	return res, height
+}
+
+func LoadLatestTipSet(ctx context.Context, api v0api.FullNode) (*types.TipSet, error) {
+	return api.ChainHead(ctx)
 }
 
 func (t *TipSetExtractor) ExtractThenPersist(ctx context.Context, in chan types.TipSetKey) {

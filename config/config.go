@@ -17,7 +17,7 @@ type Config struct {
 
 const (
 	DefaultRepoName   = ".fil-chain-extractor"
-	DefaultRepoRoot   = "~/" + DefaultRepoName
+	DefaultRepoRoot   = "./" + DefaultRepoName
 	DefaultConfigFile = "config.yaml"
 	EnvDir            = "FIL_CHAIN_EXTRACTOR_PATH"
 )
