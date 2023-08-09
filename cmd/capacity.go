@@ -163,7 +163,7 @@ var CapacityTimeCmd = &cli.Command{
 }
 
 var CapacityTimeRangeCmd = &cli.Command{
-	Name:  "timeRangeCmd",
+	Name:  "timeRange",
 	Usage: "Amount of data sealed in a time range",
 	Flags: []cli.Flag{
 		&cli.StringFlag{
